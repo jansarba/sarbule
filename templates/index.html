@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Planer</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="/jquery/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Planer</h1>
+
+    <div id="user-prompt" class="hidden">
+        <h2>podaj imie:</h2>
+        <input type="text" id="user-name-input" placeholder="imie">
+        <button id="submit-name-btn">zatwierdz</button>
+    </div>
+
+    <div id="main-view" class="hidden">
+        <div class="user-welcome">
+            <h2>witaj, <span id="welcome-user-name"></span>!</h2>
+            <button id="logout-btn">Wyloguj</button>
+        </div>
+        <div class="section" id="event-selection">
+            <h3>wybierz wydarzenie:</h3>
+            <ul id="event-list"></ul>
+        </div>
+    </div>
+
+    <div id="calendar-view" class="hidden">
+        <h2 id="event-title"></h2>
+        <p>kliknij lub przeciagnij by zaznaczyc</p>
+        
+        <div class="range-mode-container">
+            <button id="range-mode-btn">tryb zakresu (jesli z telefonu jestes, kliknij to i potem pierwszy i ostatni dzien)</button>
+        </div>
+
+        <div class="calendar-actions">
+            <button id="save-availability-btn">zapisz</button>
+            <button id="remove-availability-btn" style="background-color: #ff7875;">usun zapisane</button>
+            <button id="clear-selection-btn" style="background-color: #6c757d; color: white;">wyczysc zaznaczenie</button>
+            <button id="clear-all-btn" style="background-color: #f0ad4e;">wyczysc WSZYSTKO</button>
+            <button id="back-to-list-btn" class="hidden">wroc do listy i logowania (przeloguj jak errory masz)</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color-box morning"></div>
+                <span>Rano</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box noon"></div>
+                <span>Południe</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color-box evening"></div>
+                <span>Wieczór</span>
+            </div>
+        </div>
+
+        <div class="calendar-grid" id="calendar-grid"></div>
+    </div>
+
+    <script src="/assets/main.js"></script>
+</body>
+</html>

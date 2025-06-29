@@ -1,0 +1,10 @@
+# flyctl launch added from .gitignore
+target
+**/.env
+node_modules
+fly.toml
+/mydb
+/mydb-journal
+.env
+.git
+.gitignore

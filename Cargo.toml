@@ -1,0 +1,20 @@
+[package]
+name = "sarbule"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.4"
+tokio = {version = "1", features = ["full"] }
+serde = {version = "1", features = ["derive"]}
+serde_json = "1"
+sqlx = { version = "0.8", features = [ "runtime-tokio", "sqlite", "chrono" ] }
+chrono = { version = "0.4", features = [ "serde" ]}
+nanoid = "0.4"
+tower-http = { version = "0.6.6", features = ["fs"] }
+tower = "0.5.2"
+dotenvy = "0.15.7"
+
+[dev-dependencies]
+anyhow = "1"
+httpc-test = "0.1.1"
