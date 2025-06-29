@@ -1,7 +1,10 @@
 # sarbule - schedule unavailability app for my friend group
 
-I have made this app to solve a simple problem - it's tough figuring out when each of my friends may be unavailable when planning for my birthday party. I ended up with a rather simple, robust, scalable and universal solution!
+I have made this app to solve a simple problem - it's tough figuring out when each of my friends may be unavailable when planning for my birthday party. I ended up with a rather simple, robust, scalable and universal solution.
 As of right now, I trust my friends enough not to have implemented a password system; it can be done quite easily though - just add a password hash field to the users table and phone in some simple JWT functionality.
+
+![](screenshot.png)
+Forgive me for the rather makeshift design as of right now - though it does have nice animations!
 
 ## Tech Stack
 
