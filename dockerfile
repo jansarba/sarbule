@@ -1,6 +1,6 @@
 FROM rust:1.85 as builder
 
-RUN apt-get update && apt-get install -y nodejs npm
+RUN apt-get update && apt-get install -y nodejs npm pkg-config libssl-dev
 
 WORKDIR /usr/src/sarbule
 
@@ -18,7 +18,7 @@ COPY templates/ ./templates
 COPY assets/ ./assets
 
 # Zbuduj finalną aplikację
-RUN touch src/main.rs 
+RUN touch src/main.rs
 RUN cargo build --release
 
 # Skopiuj pliki zależności frontendu i zainstaluj je
@@ -27,6 +27,9 @@ RUN npm install
 
 # Używam lekkiego obrazu Debiana
 FROM debian:12-slim
+
+# Zainstaluj ca-certificates (potrzebne do HTTPS połączenia z Turso)
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Ustaw folder roboczy
 WORKDIR /usr/src/sarbule
@@ -39,7 +42,7 @@ COPY --from=builder /usr/src/sarbule/templates ./templates
 COPY --from=builder /usr/src/sarbule/assets ./assets
 COPY --from=builder /usr/src/sarbule/node_modules ./node_modules
 
-# Ustaw zmienną środowiskową, aby Axum nasłuchiwał na poprawnym porcie
+# Render ustawia PORT automatycznie
 ENV PORT=3000
 
 # Polecenie, które zostanie uruchomione, gdy kontener wystartuje
