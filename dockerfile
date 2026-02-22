@@ -1,6 +1,6 @@
 FROM rust:1.85 as builder
 
-RUN apt-get update && apt-get install -y nodejs npm pkg-config libssl-dev
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
 
 WORKDIR /usr/src/sarbule
 
@@ -21,10 +21,6 @@ COPY assets/ ./assets
 RUN touch src/main.rs
 RUN cargo build --release
 
-# Skopiuj pliki zależności frontendu i zainstaluj je
-COPY package.json package-lock.json ./
-RUN npm install
-
 # Używam lekkiego obrazu Debiana
 FROM debian:12-slim
 
@@ -40,7 +36,6 @@ COPY --from=builder /usr/src/sarbule/target/release/sarbule .
 # Skopiuj potrzebne pliki statyczne z etapu "builder"
 COPY --from=builder /usr/src/sarbule/templates ./templates
 COPY --from=builder /usr/src/sarbule/assets ./assets
-COPY --from=builder /usr/src/sarbule/node_modules ./node_modules
 
 # Render ustawia PORT automatycznie
 ENV PORT=3000
