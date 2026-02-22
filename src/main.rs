@@ -10,10 +10,9 @@ use axum::{
     Router,
 };
 use chrono::NaiveDate;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
+use libsql::Builder;
 use state::AppState;
 use std::env;
-use std::str::FromStr;
 use tower_http::services::ServeDir;
 
 async fn root_handler() -> Html<String> {
@@ -23,20 +22,28 @@ async fn root_handler() -> Html<String> {
         .unwrap_or_else(|_| Html("<h1>Blad: Nie mozna zaladowac pliku index.html</h1>".to_string()))
 }
 
-async fn seed_database_if_empty(pool: &SqlitePool) {
-    let event_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events")
-        .fetch_one(pool)
+async fn seed_database_if_empty(conn: &libsql::Connection) {
+    let mut rows = conn
+        .query("SELECT COUNT(*) FROM events", ())
         .await
         .expect("Failed to check event count");
 
-    if event_count.0 == 0 {
+    let count: i64 = rows
+        .next()
+        .await
+        .expect("Failed to get count row")
+        .expect("No count row")
+        .get(0)
+        .expect("Failed to get count value");
+
+    if count == 0 {
         println!("Baza danych jest pusta. Dodaje wydarzenie 'grill u Janka'...");
         let name = "grill u Janka";
         let description = Some("witam".to_string());
         let earliest = NaiveDate::from_ymd_opt(2025, 7, 5).unwrap();
         let latest = NaiveDate::from_ymd_opt(2025, 9, 30).unwrap();
-        
-        match db::create_event(pool, name, description, earliest, latest).await {
+
+        match db::create_event(conn, name, description, earliest, latest).await {
             Ok(_) => println!("Wydarzenie zostalo pomyslnie dodane."),
             Err(e) => eprintln!("Nie udalo sie dodac wydarzenia: {:?}", e),
         }
@@ -46,19 +53,25 @@ async fn seed_database_if_empty(pool: &SqlitePool) {
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let connect_options = SqliteConnectOptions::from_str(&db_url)
-        .expect("failed to parse DATABASE_URL")
-        .create_if_missing(true);
+    let db = if let Ok(url) = env::var("TURSO_DATABASE_URL") {
+        let token = env::var("TURSO_AUTH_TOKEN")
+            .expect("TURSO_AUTH_TOKEN must be set when TURSO_DATABASE_URL is set");
+        Builder::new_remote(url, token)
+            .build()
+            .await
+            .expect("failed to connect to Turso")
+    } else {
+        let path = env::var("DATABASE_URL").unwrap_or_else(|_| "sarbule_local.db".to_string());
+        Builder::new_local(&path)
+            .build()
+            .await
+            .expect("failed to create local database")
+    };
 
-    let pool = SqlitePoolOptions::new()
-        .max_connections(5)
-        .connect_with(connect_options)
-        .await
-        .expect("failed to connect to db");
+    let conn = db.connect().expect("failed to create connection");
 
-    sqlx::query(
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             public_id TEXT NOT NULL UNIQUE,
@@ -67,23 +80,23 @@ async fn main() {
             earliest DATE NOT NULL,
             latest DATE NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );",
+        )",
+        (),
     )
-    .execute(&pool)
     .await
     .expect("failed to create events table");
 
-    sqlx::query(
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE
-        );",
+        )",
+        (),
     )
-    .execute(&pool)
     .await
     .expect("failed to create users table");
 
-    sqlx::query(
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS unavailabilities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             event_id INTEGER NOT NULL,
@@ -93,19 +106,18 @@ async fn main() {
             FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
             UNIQUE(event_id, user_id, day, time_of_day)
-        );",
+        )",
+        (),
     )
-    .execute(&pool)
     .await
     .expect("failed to create unavailabilities table");
 
-    seed_database_if_empty(&pool).await;
+    seed_database_if_empty(&conn).await;
 
-    let app_state = AppState { pool };
+    let app_state = AppState { db: std::sync::Arc::new(db) };
 
     let app = Router::new()
         .route("/", get(root_handler))
-        .nest_service("/jquery", ServeDir::new("node_modules/jquery/dist"))
         .nest_service("/assets", ServeDir::new("assets"))
         .route("/api/users/login", post(handlers::login_or_register_user))
         .route(
