@@ -2,7 +2,7 @@ use axum::{http::StatusCode, response::{IntoResponse, Response}};
 
 #[derive(Debug)]
 pub enum AppError {
-    SqlxError(sqlx::Error),
+    DbError(libsql::Error),
     NotFound(String),
     BadRequest(String),
 }
@@ -10,7 +10,7 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AppError::SqlxError(e) => {
+            AppError::DbError(e) => {
                 eprintln!("[DB ERROR]: {:?}", e);
                 (StatusCode::INTERNAL_SERVER_ERROR, "blad serwera".to_string())
             }
@@ -21,8 +21,8 @@ impl IntoResponse for AppError {
     }
 }
 
-impl From<sqlx::Error> for AppError {
-    fn from(err: sqlx::Error) -> Self {
-        AppError::SqlxError(err)
+impl From<libsql::Error> for AppError {
+    fn from(err: libsql::Error) -> Self {
+        AppError::DbError(err)
     }
 }
